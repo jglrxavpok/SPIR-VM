@@ -1,6 +1,7 @@
 package org.jglr.spirvm
 
 import org.jglr.sbm.types.FloatType
+import org.jglr.sbm.types.FunctionType
 import org.jglr.sbm.types.IntType
 import org.jglr.sbm.types.Type
 
@@ -27,12 +28,13 @@ class VMState {
 
 }
 
-data class FunctionInfo(val id: Long, val position: Int)
+data class FunctionInfo(val id: Long, val position: Int, val funcType: FunctionType, val argumentTypes: MutableMap<Long, Type> = hashMapOf())
 
 abstract class VMValue<ObjectType>(val type: Type) {
     abstract var value: ObjectType
 }
 
+class FunctionInfoValue(override var value: FunctionInfo) : VMValue<FunctionInfo>(value.funcType)
 class FloatValue(type: FloatType, override var value: Float) : VMValue<Float>(type)
 class DoubleValue(type: FloatType, override var value: Double) : VMValue<Double>(type)
 class SignedInt32Value(type: IntType, override var value: Int) : VMValue<Int>(type)

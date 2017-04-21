@@ -34,9 +34,45 @@ class TestOperations {
         val module = generator.toBytes()
         printContent(module)
         val vm = SPIRVM()
-        vm.execute(module, "main") // TODO: Find entry point and handle functions
+        vm.execute(module, "main")
         val resultID = generator.getComponentID(resultVar)
         assert(vm.state.slots[resultID.toInt()].value == 3f)
+    }
+
+    @Test
+    fun functionCall() {
+        val generator = ModuleGenerator()
+        val float32 = FloatType(32)
+        val f1 = generator.constantFloat("f1", float32, 1f)
+        val f2 = generator.constantFloat("f2", float32, 2f)
+        val functionDef = ModuleFunction("main", FunctionType(Type.VOID))
+        generator.addEntryPoint(functionDef, ExecutionModel.Kernel, emptyArray())
+
+        val otherFunctionDef = ModuleFunction("add", FunctionType(Type.VOID))
+        val otherfunc = generator.createFunction(otherFunctionDef)
+        val aParameter = ModuleVariable("a", float32)
+        val bParameter = ModuleVariable("b", float32)
+        otherfunc.parameter(aParameter)
+        otherfunc.parameter(bParameter)
+        val addResult = ModuleVariable("addResult", float32)
+        otherfunc.addFloat(addResult, aParameter, bParameter)
+        otherfunc.returnValue(addResult)
+        otherfunc.end()
+
+        val fungen = generator.createFunction(functionDef)
+        val funcCallResult = fungen.callFunction(otherFunctionDef, f1, f2)
+        fungen.returnVoid()
+        fungen.end()
+
+        generator.end()
+        val module = generator.toBytes()
+        printContent(module)
+        val vm = SPIRVM()
+        vm.execute(module, "main")
+        val resultID = generator.getComponentID(funcCallResult)
+
+        val result = vm.state.slots[resultID.toInt()].value
+        assert(result == 3f) { "result was $result instead of 3f" }
     }
 
     private fun printContent(bytes: ByteArray) {
